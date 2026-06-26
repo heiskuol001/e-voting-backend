@@ -42,4 +42,20 @@ const createCandidate = async (req, res) => {
     }
 }
 
-export default createCandidate
+const retrieveCandidates = async (req, res) => {
+    try {
+        const allCandidates = await Candidate.find().lean()
+        res.status(200).json({
+            success: true,
+            candidates: allCandidates
+        })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({
+            success:false,
+            message:'server error'
+        })
+    }
+}
+
+export { createCandidate, retrieveCandidates }
