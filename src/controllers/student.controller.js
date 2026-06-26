@@ -4,10 +4,16 @@ import jwt from 'jsonwebtoken'
 import Student from '../modules/student.js'
 
 
+
 const studentRegistration = async (req,res) => {
     const { Name, Email, RegNo, Faculty, Gender } = req.body
     try {
-        const student = await Student.findOne({ Email })
+        const student = await Student.findOne({
+            $or: [
+                { Email },
+                { RegNo }
+            ]
+         })
         if (student) {
             return res.status(400).json({
                 message:'student already exist'
@@ -71,4 +77,40 @@ const studentLogin = async (req, res) => {
     }
 }
 
-export {studentRegistration, studentLogin}
+const updatePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+        const checkCurrentPassword = await bcrypt.compare(
+            currentPassword,
+            user.password
+        );
+        if (!checkCurrentPassword) {
+            return res.status(401).json({
+                message: "Wrong current password"
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(
+            newPassword,
+            salt
+        );
+        user.password = hashedPassword;
+        await user.save();
+        res.status(200).json({
+            message: "Password updated successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+export {studentRegistration, studentLogin, updatePassword}
