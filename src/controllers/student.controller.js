@@ -48,11 +48,13 @@ const studentLogin = async (req, res) => {
     const { RegNo, Password } = req.body
     try {
         const student = await Student.findOne({ RegNo })
+                .select('+Password')
         if (!student) {
             return res.status(404).json({
                 message:'Invalid credentials'
             })
         }
+        
         const isMatch = await bcrypt.compare(Password, student.Password)
         if (!isMatch) {
             return res.status(401).json({
@@ -81,15 +83,15 @@ const updatePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     try {
-        const user = await User.findById(req.user.id);
-        if (!user) {
+        const student = await Student.findById(req.user.id);
+        if (!student) {
             return res.status(404).json({
-                message: "User not found"
+                message: "Student not found"
             });
         }
         const checkCurrentPassword = await bcrypt.compare(
             currentPassword,
-            user.password
+            student.Password
         );
         if (!checkCurrentPassword) {
             return res.status(401).json({
@@ -101,12 +103,14 @@ const updatePassword = async (req, res) => {
             newPassword,
             salt
         );
-        user.password = hashedPassword;
-        await user.save();
+        student.Password = hashedPassword;
+        student.isPasswordChanged = true
+        await student.save();
         res.status(200).json({
             message: "Password updated successfully"
         });
     } catch (error) {
+        console.log(error);
         res.status(500).json({
             message: error.message
         });
